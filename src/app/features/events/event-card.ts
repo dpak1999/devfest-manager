@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, computed, input, linkedSignal } from '@angular/core';
 
 @Component({
   selector: 'app-event-card',
@@ -19,19 +19,31 @@ import { Component, input } from '@angular/core';
           <!-- TODO Mod 1: Add Date using DatePipe -->
           <p class="text-sm text-blue-600 font-semibold mb-2">TBA</p>
 
-          <!-- TODO Mod 1: Add daysUntil() using @let -->
-          <div
-            class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full shadow-sm"
-          ></div>
+          @let days = daysUntill();
+          @if (days !== null) {
+            <div
+              class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full shadow-sm"
+            >
+              @if (days > 0) {
+                In {{ days }} Days
+              } @else if (days < 0) {
+                Past event
+              } @else {
+                Happening now
+              }
+            </div>
+          }
         </div>
 
-        <!-- TODO Mod 1: Add Title Input -->
         <h3 class="text-xl font-bold text-gray-800 my-2">{{ title() }}</h3>
 
         <div class="flex justify-between items-center mt-4">
-          <!-- TODO Mod 1: Add Derived State (Like Button) -->
-          <button class="text-gray-400 hover:text-red-500 transition-colors cursor-pointer">
-            ♡ Like
+          <button
+            (click)="toggleFavorite()"
+            [class.text-red-500]="isFavorite()"
+            class="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+          >
+            {{ isFavorite() ? '♥️ Liked' : '♡ Like' }}
           </button>
 
           <!-- TODO Mod 1: Add Output -->
@@ -46,8 +58,26 @@ import { Component, input } from '@angular/core';
   `,
 })
 export class EventCard {
-  // TODO Mod 1: Implement input(), output(), and model()
   title = input.required<string>();
   image = input.required<string>();
   date = input<string>('');
+  initialLike = input(false);
+
+  isFavorite = linkedSignal(() => {
+    return this.initialLike();
+  });
+
+  toggleFavorite() {
+    this.isFavorite.update((val) => !val);
+  }
+
+  daysUntill = computed(() => {
+    const passedDate = this.date();
+    if (!passedDate) return null;
+
+    const diffTime = new Date(passedDate).getTime() - new Date().getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays;
+  });
 }
